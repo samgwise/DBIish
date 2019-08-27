@@ -21,6 +21,9 @@ has @!out-bufs;
 has $!out-lengths;
 has $!isnull;
 
+# Allow for a field length limit to avoid MySQL pessimistic suggestion of ~4GB on some data types.
+has $!max-field-length;
+
 method !handle-errors {
     if $!mysql_client.mysql_errno -> $code {
         self!set-err($code, $!mysql_client.mysql_error);
@@ -41,7 +44,8 @@ method !get-meta(MYSQL_RES $res) {
                     Str;
                 } else { t }
             }
-            $lengths[$i] = .length;
+            # Override the field length to avoid MySQL pessimistic suggestions if  needed.
+            $lengths[$i] = defined $!max-field-length ?? .length !! min .length, $!max-field-length;
         }
         else { die 'mysql: Opps! mysql_fetch_field'; }
     }
@@ -49,7 +53,7 @@ method !get-meta(MYSQL_RES $res) {
 }
 
 submethod BUILD(:$!mysql_client!, :$!parent!, :$!stmt = MYSQL_STMT,
-    :$!statement, Bool :$!Prefetch = True
+    :$!statement, Bool :$!Prefetch = True, Int :$!max-field-length
 ) {
     with $!stmt { #Prepared
         if $!param-count = .mysql_stmt_param_count -> $pc {
