@@ -45,7 +45,7 @@ method !get-meta(MYSQL_RES $res) {
                 } else { t }
             }
             # Override the field length to avoid MySQL pessimistic suggestions if  needed.
-            $lengths[$i] = defined $!max-field-length ?? .length !! min .length, $!max-field-length;
+            $lengths[$i] = defined($!max-field-length) ??  min(.length, $!max-field-length) !! .length;
         }
         else { die 'mysql: Opps! mysql_fetch_field'; }
     }
